@@ -5,14 +5,25 @@ import {
   Outlet,
   Scripts,
   ScrollRestoration,
+  useLoaderData,
 } from "react-router";
 import { rootAuthLoader } from '@clerk/react-router/ssr.server'
-import { ClerkProvider, SignedIn, SignedOut, UserButton, SignInButton} from '@clerk/react-router'
+import { ClerkProvider} from '@clerk/react-router'
 import type { Route } from "./+types/root";
 import "./app.css";
+import { ThemeProvider } from "./context/ThemeProvider";
+import Header from "./components/home/Header";
+
+interface Env {
+  CLERK_PUBLISHABLE_KEY: string;
+  CLERK_SECRET_KEY: string;
+}
 
 export async function loader(args: Route.LoaderArgs) {
-  return rootAuthLoader(args)
+  const env = args.context?.env || (args.request as any)?.env || {};
+  return rootAuthLoader(args, {
+    secretKey: env.CLERK_SECRET_KEY,
+  });
 }
 
 export const links: Route.LinksFunction = () => [
@@ -32,7 +43,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
       <head>
-        <meta charSet="utf-8" />
+        {/* <meta charSet="utf-8" /> */}
+        {/* <link rel="icon" type="image/x-icon" href="/favicon.ico" /> */}
+        <link rel="icon" type="image/png" sizes="32x32" href="/Logo.jpg" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <Meta />
         <Links />
@@ -47,23 +60,20 @@ export function Layout({ children }: { children: React.ReactNode }) {
 }
 
 export default function App({ loaderData }: Route.ComponentProps) {
+  const data = useLoaderData()
   return (
     <ClerkProvider
+      publishableKey={import.meta.env.VITE_CLERK_PUBLISHABLE_KEY}
       loaderData={loaderData}
       signUpFallbackRedirectUrl="/"
       signInFallbackRedirectUrl="/"
     >
-      <header className="flex items-center justify-center py-8 px-4">
-        <SignedOut>
-          <SignInButton />
-        </SignedOut>
-        <SignedIn>
-          <UserButton />
-        </SignedIn>
-      </header>
+      <ThemeProvider defaultTheme="light">
+       <Header/> 
       <main>
         <Outlet />
       </main>
+      </ThemeProvider>
     </ClerkProvider>
   )
 }
